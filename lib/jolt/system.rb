@@ -5,6 +5,7 @@ module Jolt
     include SystemContacts
     include SystemQueries
     include SystemConstraints
+    include SystemCharacters
 
     DEFAULT_LIMITS = {
       max_bodies: 10_240,
@@ -24,6 +25,7 @@ module Jolt
       @updating = false
       @body_registry = {}
       @constraint_registry = []
+      @character_registry = []
       @user_data = {}
       @shapes = {}
       @layers = validate_layers(layers)
@@ -82,6 +84,7 @@ module Jolt
       return if @destroyed
 
       __destroy_all_constraints
+      __destroy_all_characters
       @body_registry.each_value(&:__mark_destroyed)
       @body_registry.clear
       @user_data.clear
@@ -181,6 +184,9 @@ module Jolt
       @narrow_phase_query = Native.JPH_PhysicsSystem_GetNarrowPhaseQuery(@pointer)
       raise InitializationError, "failed to get Jolt narrow-phase query" if @narrow_phase_query.null?
 
+      @broad_phase_query = Native.JPH_PhysicsSystem_GetBroadPhaseQuery(@pointer)
+      raise InitializationError, "failed to get Jolt broad-phase query" if @broad_phase_query.null?
+
       __create_contact_queue(contact_queue_capacity)
     end
 
@@ -192,6 +198,7 @@ module Jolt
       @pointer = nil
       @job_system = nil
       @body_interface = nil
+      @broad_phase_query = nil
       @narrow_phase_query = nil
       @layer_resources = nil
     end

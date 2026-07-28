@@ -16,7 +16,9 @@ extern "C" {
 
 typedef struct JPH_ContactListener JPH_ContactListener;
 typedef struct JPH_Constraint JPH_Constraint;
+typedef struct JPH_CharacterVirtual JPH_CharacterVirtual;
 typedef struct JPH_PhysicsSystem JPH_PhysicsSystem;
+typedef struct JPH_Shape JPH_Shape;
 
 typedef enum JR_ContactEventType {
   JR_CONTACT_ADDED = 0,
@@ -80,6 +82,19 @@ JR_EXPORT JPH_Constraint* JR_Constraint_CreateSlider(
     bool has_limits,
     float min_distance,
     float max_distance);
+
+JR_EXPORT JPH_CharacterVirtual* JR_CharacterVirtual_Create(
+    JPH_PhysicsSystem* system,
+    const JPH_Shape* shape,
+    const float* position,
+    const float* rotation,
+    float max_slope_angle,
+    float mass);
+JR_EXPORT void JR_CharacterVirtual_ExtendedUpdate(
+    JPH_CharacterVirtual* character,
+    float delta_time,
+    uint32_t layer,
+    JPH_PhysicsSystem* system);
 
 #ifdef __cplusplus
 }

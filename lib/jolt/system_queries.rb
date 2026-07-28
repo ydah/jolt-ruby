@@ -30,7 +30,50 @@ module Jolt
       filter_context = nil
     end
 
+    def overlap_sphere(center, radius, layer_mask: nil, &block)
+      center_native = Conversions.native_vec3(center, name: "center")
+      radius = Conversions.positive_float(radius, "radius")
+      collect_overlapping_bodies(
+        :JPH_BroadPhaseQuery_CollideSphere,
+        center_native.pointer,
+        radius,
+        layer_mask:,
+        &block
+      )
+    end
+
+    def overlap_point(point, layer_mask: nil, &block)
+      point_native = Conversions.native_vec3(point, name: "point")
+      collect_overlapping_bodies(
+        :JPH_BroadPhaseQuery_CollidePoint,
+        point_native.pointer,
+        layer_mask:,
+        &block
+      )
+    end
+
     private
+
+    def collect_overlapping_bodies(function, *query_arguments, layer_mask:)
+      __check_alive!
+      filter, filter_context = object_layer_filter(layer_mask)
+      callback, body_ids = Native::QueryFunctions.body_collector
+      Native.public_send(
+        function,
+        @broad_phase_query,
+        *query_arguments,
+        callback,
+        nil,
+        nil,
+        filter
+      )
+      bodies = body_ids.uniq.filter_map { |id| @body_registry[id] }
+      bodies.each { |body| yield body } if block_given?
+      bodies
+    ensure
+      Native.JPH_ObjectLayerFilter_Destroy(filter) if filter && !filter.null?
+      filter_context = callback = nil
+    end
 
     def object_layer_filter(layer_mask)
       return [nil, nil] if layer_mask.nil?

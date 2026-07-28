@@ -19,7 +19,9 @@ require_relative "jolt/system_queries"
 require_relative "jolt/constraint"
 require_relative "jolt/constraint_collection"
 require_relative "jolt/system_constraints"
+require_relative "jolt/system_characters"
 require_relative "jolt/system"
+require_relative "jolt/character_virtual"
 
 module Jolt
   @lifecycle_mutex = Mutex.new

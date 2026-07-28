@@ -29,7 +29,7 @@ endif()
 
 add_subdirectory("${JOLTC_ROOT}" "${CMAKE_BINARY_DIR}/joltc")
 
-add_library(jolt_ruby_helper SHARED helper.cpp constraint_helper.cpp)
+add_library(jolt_ruby_helper SHARED helper.cpp constraint_helper.cpp character_helper.cpp)
 target_include_directories(jolt_ruby_helper PRIVATE "${JOLTC_ROOT}/include")
 target_compile_definitions(jolt_ruby_helper PRIVATE JPH_SHARED_LIBRARY_INCLUDE=1)
 target_link_libraries(jolt_ruby_helper PRIVATE joltc)

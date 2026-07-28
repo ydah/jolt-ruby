@@ -9,6 +9,7 @@ require_relative "native/shape_functions"
 require_relative "native/system_functions"
 require_relative "native/query_functions"
 require_relative "native/constraint_functions"
+require_relative "native/character_functions"
 
 module Jolt
   module Native
@@ -25,7 +26,8 @@ module Jolt
           ShapeFunctions,
           SystemFunctions,
           QueryFunctions,
-          ConstraintFunctions
+          ConstraintFunctions,
+          CharacterFunctions
         ].each { |functions| functions.attach(self) }
         @loaded = true
         self

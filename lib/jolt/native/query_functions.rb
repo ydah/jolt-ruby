@@ -8,6 +8,10 @@ module Jolt
       def attach(native)
         native.attach_function :JPH_NarrowPhaseQuery_CastRay,
                                %i[pointer pointer pointer pointer pointer pointer pointer], :bool
+        native.attach_function :JPH_BroadPhaseQuery_CollideSphere,
+                               %i[pointer pointer float pointer pointer pointer pointer], :bool
+        native.attach_function :JPH_BroadPhaseQuery_CollidePoint,
+                               %i[pointer pointer pointer pointer pointer pointer], :bool
         native.attach_function :JPH_ObjectLayerFilter_SetProcs, [:pointer], :void
         native.attach_function :JPH_ObjectLayerFilter_Create, [:pointer], :pointer
         native.attach_function :JPH_ObjectLayerFilter_Destroy, [:pointer], :void
@@ -33,6 +37,15 @@ module Jolt
           procs[:should_collide] = @object_layer_callback
         end
         native.JPH_ObjectLayerFilter_SetProcs(@object_layer_procs.pointer)
+      end
+
+      def body_collector
+        hits = []
+        callback = FFI::Function.new(:float, %i[pointer uint32]) do |_context, body_id|
+          hits << body_id
+          1.0
+        end
+        [callback, hits]
       end
     end
   end

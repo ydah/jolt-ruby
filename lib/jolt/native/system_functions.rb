@@ -16,6 +16,7 @@ module Jolt
         native.attach_function :JPH_PhysicsSystem_Destroy, [:pointer], :void
         native.attach_function :JPH_PhysicsSystem_GetBodyInterface, [:pointer], :pointer
         native.attach_function :JPH_PhysicsSystem_GetBodyPtr, %i[pointer uint32], :pointer
+        native.attach_function :JPH_PhysicsSystem_GetBroadPhaseQuery, [:pointer], :pointer
         native.attach_function :JPH_PhysicsSystem_GetNarrowPhaseQuery, [:pointer], :pointer
         native.attach_function :JPH_PhysicsSystem_SetGravity, %i[pointer pointer], :void
         native.attach_function :JPH_PhysicsSystem_GetGravity, %i[pointer pointer], :void
