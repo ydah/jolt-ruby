@@ -1,8 +1,13 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "json"
 
 RSpec.describe "physics validity" do
+  DETERMINISM_FIXTURE = JSON.parse(
+    File.read(File.join(__dir__, "fixtures", "determinism.json"))
+  ).freeze
+
   def with_system
     system = Jolt::System.new
     yield system
@@ -27,15 +32,21 @@ RSpec.describe "physics validity" do
         system.bodies.create(shape:, position: [x, 0.45 + level * 0.85, z])
       end
       180.times { system.update(1.0 / 120) }
-      bodies.flat_map { |body| body.position.to_a }
+      bodies.map { |body| body.position.to_a }
     end
   end
 
-  it "repeats a fixed-seed 100-body snapshot deterministically" do
-    first = stack_snapshot(12_345)
-    second = stack_snapshot(12_345)
+  it "matches the committed fixed-seed 100-body platform snapshot" do
+    platform = Jolt::Native::Platform.tag
+    snapshot_name = DETERMINISM_FIXTURE.fetch("platform_snapshots").fetch(platform)
+    expected = DETERMINISM_FIXTURE.fetch("snapshots").fetch(snapshot_name)
+    actual = stack_snapshot(12_345)
+    tolerance = DETERMINISM_FIXTURE.fetch("tolerance")
 
-    expect(second.zip(first)).to all(satisfy { |actual, expected| (actual - expected).abs <= 1e-4 })
+    expect(actual.length).to eq(expected.length)
+    actual.flatten.zip(expected.flatten).each_with_index do |(value, baseline), index|
+      expect(value).to be_within(tolerance).of(baseline), "snapshot component #{index}"
+    end
   end
 
   it "matches gravitational acceleration in free fall" do
