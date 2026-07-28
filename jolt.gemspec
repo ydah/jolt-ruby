@@ -22,11 +22,21 @@ Gem::Specification.new do |spec|
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
   gemspec = File.basename(__FILE__)
+  platform_gem = ENV["JOLT_RUBY_PLATFORM_GEM"] == "1"
   spec.files = IO.popen(%w[git ls-files --recurse-submodules -z], chdir: __dir__, err: IO::NULL) do |ls|
     ls.readlines("\x0", chomp: true).reject do |f|
       (f == gemspec) ||
         f.start_with?(*%w[bin/ Gemfile .gitignore .rspec spec/ .github/])
     end
+  end
+  if platform_gem
+    spec.platform = Gem::Platform.local
+    spec.files.reject! { |file| file.start_with?("ext/") }
+    spec.files.concat Dir[File.join(__dir__, "lib", "jolt", "native", "**", "*")]
+      .select { |file| File.file?(file) }
+      .map { |file| file.delete_prefix("#{__dir__}/") }
+  else
+    spec.extensions = ["ext/jolt_ruby/extconf.rb"]
   end
   spec.bindir = "exe"
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
@@ -34,4 +44,6 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "ffi", "~> 1.17"
   spec.add_dependency "larb", "~> 1.0"
+
+  spec.add_development_dependency "ffi-clang", "~> 0.16"
 end

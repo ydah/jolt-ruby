@@ -95,7 +95,7 @@ module Jolt
       body_pointer = Native.JPH_PhysicsSystem_GetBodyPtr(@pointer, result[:body_id])
       unless body_pointer.null?
         Native.JPH_Body_GetWorldSpaceSurfaceNormal(
-          body_pointer, result[:sub_shape_id], point.pointer, normal.pointer
+          body_pointer, result[:sub_shape_id2], point.pointer, normal.pointer
         )
       end
 
@@ -104,7 +104,7 @@ module Jolt
         fraction:,
         point: Conversions.vec3(point),
         normal: Conversions.vec3(normal),
-        sub_shape_id: result[:sub_shape_id]
+        sub_shape_id: result[:sub_shape_id2]
       )
     end
   end

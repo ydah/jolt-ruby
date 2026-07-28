@@ -6,15 +6,6 @@ module Jolt
       module_function
 
       def attach(native)
-        native.attach_function :JPH_NarrowPhaseQuery_CastRay,
-                               %i[pointer pointer pointer pointer pointer pointer pointer], :bool
-        native.attach_function :JPH_BroadPhaseQuery_CollideSphere,
-                               %i[pointer pointer float pointer pointer pointer pointer], :bool
-        native.attach_function :JPH_BroadPhaseQuery_CollidePoint,
-                               %i[pointer pointer pointer pointer pointer pointer], :bool
-        native.attach_function :JPH_ObjectLayerFilter_SetProcs, [:pointer], :void
-        native.attach_function :JPH_ObjectLayerFilter_Create, [:pointer], :pointer
-        native.attach_function :JPH_ObjectLayerFilter_Destroy, [:pointer], :void
         install_object_layer_filter(native)
       end
 

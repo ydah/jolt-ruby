@@ -8,6 +8,10 @@
 /pkg/
 /spec/reports/
 /tmp/
+/ext/jolt_ruby/build/
+/ext/jolt_ruby/native-artifacts/
+/ext/jolt_ruby/Makefile
+/lib/jolt/native/*/
 Gemfile.lock
 .rspec_status
 *.gem
