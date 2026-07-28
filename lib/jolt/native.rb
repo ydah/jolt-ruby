@@ -2,6 +2,7 @@
 
 require "ffi"
 require "rbconfig"
+require_relative "native/platform"
 require_relative "native/types"
 require_relative "native/core_functions"
 require_relative "native/query_functions"
@@ -67,7 +68,7 @@ module Jolt
       end
 
       def platform
-        "#{RbConfig::CONFIG.fetch("host_cpu")}-#{RbConfig::CONFIG.fetch("host_os")}"
+        Platform.tag
       end
 
       def project_root

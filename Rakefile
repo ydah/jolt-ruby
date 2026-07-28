@@ -6,6 +6,7 @@ require "open3"
 require "rspec/core/rake_task"
 require "rbconfig"
 require "shellwords"
+require_relative "lib/jolt/native/platform"
 
 RSpec::Core::RakeTask.new(:spec)
 
@@ -14,7 +15,7 @@ module NativeBuild
   module_function
 
   ROOT = __dir__
-  PLATFORM = "#{RbConfig::CONFIG.fetch("host_cpu")}-#{RbConfig::CONFIG.fetch("host_os")}"
+  PLATFORM = Jolt::Native::Platform.tag
   BUILD_DIR = File.join(ROOT, "tmp", "native", PLATFORM)
 
   def configure

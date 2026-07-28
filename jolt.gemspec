@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-require "rbconfig"
+require "rubygems"
+require_relative "lib/jolt/native/platform"
 require_relative "lib/jolt/version"
 
 Gem::Specification.new do |spec|
@@ -29,9 +30,9 @@ Gem::Specification.new do |spec|
     end
   end
   if platform_gem
-    spec.platform = Gem::Platform.local
+    native_platform = Jolt::Native::Platform.tag
+    spec.platform = Gem::Platform.new(native_platform)
     spec.files.reject! { |file| file.start_with?("ext/", "generator/") }
-    native_platform = "#{RbConfig::CONFIG.fetch("host_cpu")}-#{RbConfig::CONFIG.fetch("host_os")}"
     spec.files.concat Dir[File.join(__dir__, "lib", "jolt", "native", native_platform, "*")]
       .select { |file| File.file?(file) }
       .map { |file| file.delete_prefix("#{__dir__}/") }

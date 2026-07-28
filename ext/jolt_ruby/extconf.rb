@@ -3,9 +3,10 @@
 require "fileutils"
 require "mkmf"
 require "rbconfig"
+require File.expand_path("../../lib/jolt/native/platform", __dir__)
 
 source_dir = __dir__
-platform = "#{RbConfig::CONFIG.fetch("host_cpu")}-#{RbConfig::CONFIG.fetch("host_os")}"
+platform = Jolt::Native::Platform.tag
 build_dir = File.join(source_dir, "build", platform)
 artifact_dir = File.join(source_dir, "native-artifacts")
 host_os = RbConfig::CONFIG.fetch("host_os")
