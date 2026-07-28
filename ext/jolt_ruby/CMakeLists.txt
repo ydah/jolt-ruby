@@ -1,0 +1,41 @@
+cmake_minimum_required(VERSION 3.16)
+
+project(jolt_ruby_native LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+
+set(JPH_MASTER_PROJECT OFF CACHE BOOL "" FORCE)
+set(JPH_BUILD_SHARED ON CACHE BOOL "" FORCE)
+set(JPH_INSTALL OFF CACHE BOOL "" FORCE)
+set(JPH_SAMPLES OFF CACHE BOOL "" FORCE)
+set(JPH_TESTS OFF CACHE BOOL "" FORCE)
+set(DEBUG_RENDERER_IN_DEBUG_AND_RELEASE OFF CACHE BOOL "" FORCE)
+set(DEBUG_RENDERER_IN_DISTRIBUTION OFF CACHE BOOL "" FORCE)
+set(PROFILER_IN_DEBUG_AND_RELEASE OFF CACHE BOOL "" FORCE)
+set(PROFILER_IN_DISTRIBUTION OFF CACHE BOOL "" FORCE)
+set(ENABLE_OBJECT_STREAM OFF CACHE BOOL "" FORCE)
+set(JPH_USE_DX12 OFF CACHE BOOL "" FORCE)
+set(JPH_USE_VK OFF CACHE BOOL "" FORCE)
+set(JPH_USE_MTL OFF CACHE BOOL "" FORCE)
+
+set(JOLTC_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../joltc" CACHE PATH "Path to joltc")
+if(NOT EXISTS "${JOLTC_ROOT}/CMakeLists.txt")
+  message(FATAL_ERROR "joltc submodule is missing; run git submodule update --init")
+endif()
+
+add_subdirectory("${JOLTC_ROOT}" "${CMAKE_BINARY_DIR}/joltc")
+
+add_library(jolt_ruby_helper SHARED helper.cpp)
+target_include_directories(jolt_ruby_helper PRIVATE "${JOLTC_ROOT}/include")
+target_compile_definitions(jolt_ruby_helper PRIVATE JPH_SHARED_LIBRARY_INCLUDE=1)
+target_link_libraries(jolt_ruby_helper PRIVATE joltc)
+
+if(APPLE)
+  set_target_properties(jolt_ruby_helper PROPERTIES INSTALL_RPATH "@loader_path")
+elseif(UNIX)
+  set_target_properties(jolt_ruby_helper PROPERTIES INSTALL_RPATH "$ORIGIN")
+endif()

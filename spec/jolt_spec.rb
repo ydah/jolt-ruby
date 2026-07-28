@@ -5,7 +5,12 @@ RSpec.describe Jolt do
     expect(Jolt::VERSION).not_to be nil
   end
 
-  it "does something useful" do
-    expect(false).to eq(true)
+  it "initializes and shuts down the native engine" do
+    expect(described_class.init).to equal(described_class)
+    expect(described_class).to be_initialized
+
+    described_class.shutdown
+
+    expect(described_class).not_to be_initialized
   end
 end
