@@ -2,6 +2,11 @@
 
 require "ffi"
 require "rbconfig"
+require_relative "native/types"
+require_relative "native/core_functions"
+require_relative "native/layer_functions"
+require_relative "native/shape_functions"
+require_relative "native/system_functions"
 
 module Jolt
   module Native
@@ -12,7 +17,12 @@ module Jolt
         return self if @loaded
 
         ffi_lib(*Loader.library_paths)
-        attach_core_functions
+        [
+          CoreFunctions,
+          LayerFunctions,
+          ShapeFunctions,
+          SystemFunctions
+        ].each { |functions| functions.attach(self) }
         @loaded = true
         self
       rescue LoadError => error
@@ -23,12 +33,6 @@ module Jolt
         @loaded == true
       end
 
-      private
-
-      def attach_core_functions
-        attach_function :JPH_Init, [], :bool
-        attach_function :JPH_Shutdown, [], :void
-      end
     end
 
     module Loader
