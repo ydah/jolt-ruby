@@ -24,6 +24,15 @@ module Jolt
       end
     end
 
+    def native_unit_vec3(value, name:)
+      native = native_vec3(value, name:)
+      length = Math.sqrt(%i[x y z].sum { |component| native[component]**2 })
+      raise InvalidArgumentError, "#{name} must not be zero" if length <= Float::EPSILON
+
+      %i[x y z].each { |component| native[component] /= length }
+      native
+    end
+
     def vec3(native)
       Larb::Vec3.new(native[:x], native[:y], native[:z])
     end

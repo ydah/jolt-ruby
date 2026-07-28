@@ -52,5 +52,23 @@ module Jolt
              :normal, [:float, 3],
              :penetration, :float
     end
+
+    class RayCastResult < FFI::Struct
+      layout :body_id, :uint32,
+             :fraction, :float,
+             :sub_shape_id, :uint32
+    end
+
+    class IndexedTriangle < FFI::Struct
+      layout :i1, :uint32,
+             :i2, :uint32,
+             :i3, :uint32,
+             :material_index, :uint32,
+             :user_data, :uint32
+    end
+
+    class ObjectLayerFilterProcs < FFI::Struct
+      layout :should_collide, :pointer
+    end
   end
 end

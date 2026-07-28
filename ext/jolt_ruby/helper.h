@@ -15,6 +15,8 @@ extern "C" {
 #endif
 
 typedef struct JPH_ContactListener JPH_ContactListener;
+typedef struct JPH_Constraint JPH_Constraint;
+typedef struct JPH_PhysicsSystem JPH_PhysicsSystem;
 
 typedef enum JR_ContactEventType {
   JR_CONTACT_ADDED = 0,
@@ -40,6 +42,44 @@ JR_EXPORT void JR_ContactQueue_Destroy(JR_ContactQueue* queue);
 JR_EXPORT JPH_ContactListener* JR_ContactQueue_GetListener(JR_ContactQueue* queue);
 JR_EXPORT bool JR_ContactQueue_Pop(JR_ContactQueue* queue, JR_ContactEvent* event);
 JR_EXPORT uint64_t JR_ContactQueue_GetDroppedCount(const JR_ContactQueue* queue);
+
+JR_EXPORT JPH_Constraint* JR_Constraint_CreateFixed(
+    JPH_PhysicsSystem* system,
+    uint32_t body_a,
+    uint32_t body_b,
+    const float* anchor);
+JR_EXPORT JPH_Constraint* JR_Constraint_CreatePoint(
+    JPH_PhysicsSystem* system,
+    uint32_t body_a,
+    uint32_t body_b,
+    const float* anchor);
+JR_EXPORT JPH_Constraint* JR_Constraint_CreateDistance(
+    JPH_PhysicsSystem* system,
+    uint32_t body_a,
+    uint32_t body_b,
+    const float* point_a,
+    const float* point_b,
+    float min_distance,
+    float max_distance);
+JR_EXPORT JPH_Constraint* JR_Constraint_CreateHinge(
+    JPH_PhysicsSystem* system,
+    uint32_t body_a,
+    uint32_t body_b,
+    const float* anchor,
+    const float* axis,
+    const float* normal,
+    bool has_limits,
+    float min_angle,
+    float max_angle);
+JR_EXPORT JPH_Constraint* JR_Constraint_CreateSlider(
+    JPH_PhysicsSystem* system,
+    uint32_t body_a,
+    uint32_t body_b,
+    const float* anchor,
+    const float* axis,
+    bool has_limits,
+    float min_distance,
+    float max_distance);
 
 #ifdef __cplusplus
 }

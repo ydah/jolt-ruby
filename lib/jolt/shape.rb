@@ -2,6 +2,8 @@
 
 module Jolt
   class Shape
+    extend ShapeBuilders
+
     DEFAULT_CONVEX_RADIUS = 0.05
 
     class << self
@@ -67,6 +69,11 @@ module Jolt
     def volume
       check_alive!
       Native.JPH_Shape_GetVolume(@pointer)
+    end
+
+    def must_be_static?
+      check_alive!
+      Native.JPH_Shape_MustBeStatic(@pointer)
     end
 
     def native_pointer

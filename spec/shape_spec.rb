@@ -34,4 +34,36 @@ RSpec.describe Jolt::Shape do
 
     expect { @shape.volume }.to raise_error(Jolt::UseAfterDestroyError)
   end
+
+  it "builds hulls and meshes from packed buffers" do
+    points = [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1].pack("e*")
+    vertices = [-1, 0, -1, 1, 0, -1, 1, 0, 1, -1, 0, 1].pack("e*")
+    indices = [0, 1, 2, 0, 2, 3].pack("V*")
+    shapes = [
+      described_class.convex_hull(points),
+      described_class.mesh(vertices:, indices:)
+    ]
+
+    expect(shapes.first.volume).to be_within(1e-6).of(1.0 / 6.0)
+    expect(shapes.last).to be_must_be_static
+  ensure
+    shapes&.each(&:release)
+  end
+
+  it "builds heightfields, compounds, and decorated shapes" do
+    child = described_class.sphere(1)
+    shapes = [
+      described_class.heightfield(samples: Array.new(16, 0), size: 4),
+      described_class.compound([[child, [0, 0, 0], [0, 0, 0, 1]]]),
+      described_class.scaled(child, [2, 2, 2]),
+      described_class.offset(child, position: [1, 0, 0])
+    ]
+
+    expect(shapes.map(&:kind)).to eq(%i[heightfield compound scaled offset])
+    expect(shapes.first).to be_must_be_static
+    expect(shapes.drop(1).map(&:volume)).to all(be_positive)
+  ensure
+    shapes&.each(&:release)
+    child&.release
+  end
 end

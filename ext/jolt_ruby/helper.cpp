@@ -175,7 +175,7 @@ void on_contact_removed(void* user_data, const JPH_SubShapeIDPair* pair) {
 }
 
 void install_contact_procs() {
-  JPH_ContactListener_Procs procs{};
+  static JPH_ContactListener_Procs procs{};
   procs.OnContactValidate = on_contact_validate;
   procs.OnContactAdded = on_contact_added;
   procs.OnContactPersisted = on_contact_persisted;

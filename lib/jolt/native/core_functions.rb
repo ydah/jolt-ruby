@@ -10,6 +10,12 @@ module Jolt
         native.attach_function :JPH_Shutdown, [], :void
         native.attach_function :JPH_JobSystemThreadPool_Create, [:pointer], :pointer
         native.attach_function :JPH_JobSystem_Destroy, [:pointer], :void
+
+        native.attach_function :JR_ContactQueue_Create, [:uint32], :pointer
+        native.attach_function :JR_ContactQueue_Destroy, [:pointer], :void
+        native.attach_function :JR_ContactQueue_GetListener, [:pointer], :pointer
+        native.attach_function :JR_ContactQueue_Pop, %i[pointer pointer], :bool
+        native.attach_function :JR_ContactQueue_GetDroppedCount, [:pointer], :uint64
       end
     end
   end

@@ -19,6 +19,9 @@ module Jolt
       @system.__check_alive!
       validate_shape!(shape)
       motion_type = MOTION_TYPES.fetch(motion.to_sym)
+      if !motion_type.zero? && shape.must_be_static?
+        raise InvalidArgumentError, "#{shape.kind} shapes can only be used by static bodies"
+      end
       layer ||= motion_type.zero? ? :non_moving : :moving
       layer_id = @system.layers.object_layer_id(layer)
       settings = create_settings(shape, position, rotation, motion_type, layer_id)

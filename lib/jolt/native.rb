@@ -7,6 +7,8 @@ require_relative "native/core_functions"
 require_relative "native/layer_functions"
 require_relative "native/shape_functions"
 require_relative "native/system_functions"
+require_relative "native/query_functions"
+require_relative "native/constraint_functions"
 
 module Jolt
   module Native
@@ -21,7 +23,9 @@ module Jolt
           CoreFunctions,
           LayerFunctions,
           ShapeFunctions,
-          SystemFunctions
+          SystemFunctions,
+          QueryFunctions,
+          ConstraintFunctions
         ].each { |functions| functions.attach(self) }
         @loaded = true
         self

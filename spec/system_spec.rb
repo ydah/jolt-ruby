@@ -69,4 +69,56 @@ RSpec.describe Jolt::System do
     expect(shape).to be_released
     expect { @system.gravity }.to raise_error(Jolt::UseAfterDestroyError)
   end
+
+  it "raycasts closest bodies with an object-layer mask" do
+    floor = @system.bodies.create(
+      shape: Jolt::Shape.box([5, 0.5, 5]),
+      position: [0, -0.5, 0],
+      motion: :static
+    )
+    @system.bodies.create(shape: Jolt::Shape.sphere(0.5), position: [0, 2, 0])
+
+    hit = @system.raycast(
+      origin: [0, 5, 0],
+      direction: [0, -10, 0],
+      layer_mask: [:non_moving]
+    )
+
+    expect(hit.body).to eq(floor)
+    expect(hit.point.to_a).to all(be_within(1e-6).of(0.0))
+    expect(hit.normal.to_a).to eq([0.0, 1.0, 0.0])
+  end
+
+  it "copies contact events out of the native worker-thread queue" do
+    floor = @system.bodies.create(
+      shape: Jolt::Shape.box([5, 0.5, 5]),
+      position: [0, -0.5, 0],
+      motion: :static
+    )
+    ball = @system.bodies.create(shape: Jolt::Shape.sphere(0.5), position: [0, 2, 0])
+    added = []
+
+    60.times do
+      @system.update(1.0 / 60.0)
+      added.concat(@system.contact_events.added)
+    end
+
+    expect(added.length).to eq(1)
+    expect([added.first.body_a, added.first.body_b]).to contain_exactly(floor, ball)
+    expect(added.first.normal).to be_a(Larb::Vec3)
+    expect(@system.contact_events.dropped_count).to eq(0)
+  end
+
+  it "prevents dynamic bodies from using static-only mesh shapes" do
+    mesh = Jolt::Shape.mesh(
+      vertices: [[0, 0, 0], [1, 0, 0], [0, 0, 1]],
+      indices: [[0, 1, 2]]
+    )
+
+    expect do
+      @system.bodies.create(shape: mesh)
+    end.to raise_error(Jolt::InvalidArgumentError, /static bodies/)
+  ensure
+    mesh&.release
+  end
 end

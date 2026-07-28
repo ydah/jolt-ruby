@@ -2,28 +2,37 @@
 
 module Jolt
   class System
+    include SystemContacts
+    include SystemQueries
+    include SystemConstraints
+
     DEFAULT_LIMITS = {
       max_bodies: 10_240,
       max_body_pairs: 65_536,
       max_contact_constraints: 10_240
     }.freeze
 
-    attr_reader :layers, :bodies
+    attr_reader :layers, :bodies, :constraints, :contact_events
 
     def initialize(max_bodies: DEFAULT_LIMITS[:max_bodies],
                    max_body_pairs: DEFAULT_LIMITS[:max_body_pairs],
                    max_contact_constraints: DEFAULT_LIMITS[:max_contact_constraints],
-                   gravity: [0, -9.81, 0], layers: Layers.default)
+                   gravity: [0, -9.81, 0], layers: Layers.default,
+                   contact_queue_capacity: 65_536)
       Jolt.init
       @destroyed = false
       @updating = false
       @body_registry = {}
+      @constraint_registry = []
       @user_data = {}
       @shapes = {}
       @layers = validate_layers(layers)
-      create_native_system(max_bodies, max_body_pairs, max_contact_constraints)
+      create_native_system(
+        max_bodies, max_body_pairs, max_contact_constraints, contact_queue_capacity
+      )
       self.gravity = gravity
       @bodies = BodyCollection.new(self)
+      @constraints = ConstraintCollection.new(self)
       Jolt.__register_system(self)
     rescue StandardError
       destroy_native_resources
@@ -42,6 +51,7 @@ module Jolt
       @body_registry.each_value(&:__capture_before_step)
       error = Native.JPH_PhysicsSystem_Update(@pointer, delta_time, collision_steps, @job_system)
       @body_registry.each_value(&:__capture_after_step)
+      __drain_contact_events
       raise_update_error!(error) unless error.zero?
       self
     ensure
@@ -71,6 +81,7 @@ module Jolt
     def destroy
       return if @destroyed
 
+      __destroy_all_constraints
       @body_registry.each_value(&:__mark_destroyed)
       @body_registry.clear
       @user_data.clear
@@ -103,6 +114,7 @@ module Jolt
       registered = @body_registry.delete(body.id)
       raise InvalidArgumentError, "body does not belong to this system" unless registered.equal?(body)
 
+      __destroy_constraints_for(body)
       Native.JPH_BodyInterface_RemoveAndDestroyBody(@body_interface, body.id)
       @user_data.delete(body.id)
       body.__mark_destroyed
@@ -111,6 +123,11 @@ module Jolt
 
     def __body(id)
       @body_registry[id]
+    end
+
+    def __native_pointer
+      __check_alive!
+      @pointer
     end
 
     def __bodies_snapshot
@@ -137,7 +154,7 @@ module Jolt
       layers
     end
 
-    def create_native_system(max_bodies, max_body_pairs, max_contact_constraints)
+    def create_native_system(max_bodies, max_body_pairs, max_contact_constraints, contact_queue_capacity)
       limits = [max_bodies, max_body_pairs, max_contact_constraints]
       unless limits.all? { |value| value.is_a?(Integer) && value.positive? }
         raise InvalidArgumentError, "system limits must be positive integers"
@@ -160,15 +177,22 @@ module Jolt
       @layer_resources.transfer_to_system!
       @body_interface = Native.JPH_PhysicsSystem_GetBodyInterface(@pointer)
       raise InitializationError, "failed to get Jolt body interface" if @body_interface.null?
+
+      @narrow_phase_query = Native.JPH_PhysicsSystem_GetNarrowPhaseQuery(@pointer)
+      raise InitializationError, "failed to get Jolt narrow-phase query" if @narrow_phase_query.null?
+
+      __create_contact_queue(contact_queue_capacity)
     end
 
     def destroy_native_resources
+      __destroy_contact_queue
       Native.JPH_PhysicsSystem_Destroy(@pointer) if @pointer && !@pointer.null?
       Native.JPH_JobSystem_Destroy(@job_system) if @job_system && !@job_system.null?
       @layer_resources&.destroy
       @pointer = nil
       @job_system = nil
       @body_interface = nil
+      @narrow_phase_query = nil
       @layer_resources = nil
     end
 

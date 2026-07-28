@@ -15,6 +15,8 @@ module Jolt
         native.attach_function :JPH_PhysicsSystem_Create, [:pointer], :pointer
         native.attach_function :JPH_PhysicsSystem_Destroy, [:pointer], :void
         native.attach_function :JPH_PhysicsSystem_GetBodyInterface, [:pointer], :pointer
+        native.attach_function :JPH_PhysicsSystem_GetBodyPtr, %i[pointer uint32], :pointer
+        native.attach_function :JPH_PhysicsSystem_GetNarrowPhaseQuery, [:pointer], :pointer
         native.attach_function :JPH_PhysicsSystem_SetGravity, %i[pointer pointer], :void
         native.attach_function :JPH_PhysicsSystem_GetGravity, %i[pointer pointer], :void
         native.attach_function :JPH_PhysicsSystem_OptimizeBroadPhase, [:pointer], :void
@@ -69,6 +71,8 @@ module Jolt
         native.attach_function :JPH_BodyInterface_GetRestitution, %i[pointer uint32], :float
         native.attach_function :JPH_BodyInterface_SetIsSensor, %i[pointer uint32 bool], :void
         native.attach_function :JPH_BodyInterface_IsSensor, %i[pointer uint32], :bool
+        native.attach_function :JPH_Body_GetWorldSpaceSurfaceNormal,
+                               %i[pointer uint32 pointer pointer], :void
       end
 
       def attach_body_vectors(native)
