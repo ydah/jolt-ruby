@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "rbconfig"
 require_relative "lib/jolt/version"
 
 Gem::Specification.new do |spec|
@@ -14,9 +15,7 @@ Gem::Specification.new do |spec|
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.2.0"
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = spec.homepage
-  spec.metadata["changelog_uri"] = "#{spec.homepage}/blob/main/CHANGELOG.md"
-
+  spec.metadata["source_code_uri"] = "#{spec.homepage}/tree/main"
   spec.metadata["rubygems_mfa_required"] = "true"
 
   # Specify which files should be added to the gem when it is released.
@@ -31,8 +30,9 @@ Gem::Specification.new do |spec|
   end
   if platform_gem
     spec.platform = Gem::Platform.local
-    spec.files.reject! { |file| file.start_with?("ext/") }
-    spec.files.concat Dir[File.join(__dir__, "lib", "jolt", "native", "**", "*")]
+    spec.files.reject! { |file| file.start_with?("ext/", "generator/") }
+    native_platform = "#{RbConfig::CONFIG.fetch("host_cpu")}-#{RbConfig::CONFIG.fetch("host_os")}"
+    spec.files.concat Dir[File.join(__dir__, "lib", "jolt", "native", native_platform, "*")]
       .select { |file| File.file?(file) }
       .map { |file| file.delete_prefix("#{__dir__}/") }
   else
