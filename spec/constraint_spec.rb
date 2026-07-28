@@ -67,4 +67,10 @@ RSpec.describe Jolt::Constraint do
     expect(@system.constraints.size).to eq(0)
     expect { constraint.enabled? }.to raise_error(Jolt::UseAfterDestroyError)
   end
+
+  it "validates distance bodies before resolving default points" do
+    expect do
+      @system.constraints.distance(body_a: Object.new, body_b: @moving_body)
+    end.to raise_error(Jolt::InvalidArgumentError, /constraint bodies/)
+  end
 end

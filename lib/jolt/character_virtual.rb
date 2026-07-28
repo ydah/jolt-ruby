@@ -27,6 +27,9 @@ module Jolt
       native_position = Conversions.native_vec3(position, name: "position")
       native_rotation = Conversions.native_quat(rotation)
       slope = Conversions.positive_float(max_slope, "max_slope")
+      unless slope <= Math::PI / 2
+        raise InvalidArgumentError, "max_slope must not exceed pi / 2"
+      end
       character_mass = Conversions.positive_float(mass, "mass")
       @pointer = Native.JR_CharacterVirtual_Create(
         @system.__native_pointer,
@@ -94,13 +97,16 @@ module Jolt
 
     def update(delta_time)
       check_alive!
-      Native.JR_CharacterVirtual_ExtendedUpdate(
-        @pointer,
-        Conversions.positive_float(delta_time, "delta_time"),
-        @layer_id,
-        @system.__native_pointer
-      )
-      self
+      delta_time = Conversions.positive_float(delta_time, "delta_time")
+      @system.__with_native_operation("recursive virtual character update is not allowed") do
+        Native.JR_CharacterVirtual_ExtendedUpdate(
+          @pointer,
+          delta_time,
+          @layer_id,
+          @system.__native_pointer
+        )
+        self
+      end
     end
 
     def ground_state
@@ -150,7 +156,7 @@ module Jolt
 
     def check_alive!
       raise UseAfterDestroyError, "virtual character has been destroyed" if @destroyed
-      raise UseAfterDestroyError, "system has been destroyed" if @system.destroyed?
+      @system.__check_alive!
     end
   end
 end

@@ -50,6 +50,18 @@ RSpec.describe Jolt::Shape do
     shapes&.each(&:release)
   end
 
+  it "rejects packed buffers with trailing partial values" do
+    valid_points = [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1].pack("e*")
+    valid_vertices = [-1, 0, -1, 1, 0, -1, 1, 0, 1].pack("e*")
+
+    expect do
+      described_class.convex_hull(valid_points + "\0".b)
+    end.to raise_error(Jolt::InvalidArgumentError, /trailing bytes/)
+    expect do
+      described_class.mesh(vertices: valid_vertices, indices: [0, 1, 2].pack("V*") + "\0".b)
+    end.to raise_error(Jolt::InvalidArgumentError, /trailing bytes/)
+  end
+
   it "builds heightfields, compounds, and decorated shapes" do
     child = described_class.sphere(1)
     shapes = [

@@ -18,7 +18,7 @@ module Jolt
                user_data: nil)
       @system.__check_alive!
       validate_shape!(shape)
-      motion_type = MOTION_TYPES.fetch(motion.to_sym)
+      motion_type = MOTION_TYPES.fetch(motion.respond_to?(:to_sym) ? motion.to_sym : nil)
       if !motion_type.zero? && shape.must_be_static?
         raise InvalidArgumentError, "#{shape.kind} shapes can only be used by static bodies"
       end

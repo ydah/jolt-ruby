@@ -56,7 +56,45 @@ RSpec.describe Jolt::System do
 
     expect(body).to be_destroyed
     expect { body.position }.to raise_error(Jolt::UseAfterDestroyError)
+    expect { body.interpolated(0.5) }.to raise_error(Jolt::UseAfterDestroyError)
     expect(@system.bodies.size).to eq(0)
+  end
+
+  it "rejects access from another thread during a native operation" do
+    entered = Queue.new
+    release = Queue.new
+    owner = Thread.new do
+      @system.__with_native_operation do
+        entered << true
+        release.pop
+      end
+    end
+    entered.pop
+
+    expect { @system.gravity }.to raise_error(Jolt::ConcurrentAccessError)
+    expect { @system.update(1.0 / 60.0) }.to raise_error(Jolt::ConcurrentAccessError)
+    expect { @system.destroy }.to raise_error(Jolt::ConcurrentAccessError)
+  ensure
+    release&.push(true)
+    owner&.join
+  end
+
+  it "validates values before passing them to fixed-width native arguments" do
+    expect do
+      described_class.new(max_bodies: 1 << 32)
+    end.to raise_error(Jolt::InvalidArgumentError, /32-bit/)
+    expect do
+      described_class.new(contact_queue_capacity: (1 << 30) + 1)
+    end.to raise_error(Jolt::InvalidArgumentError, /contact_queue_capacity/)
+    expect do
+      @system.update(1.0 / 60.0, collision_steps: 1 << 31)
+    end.to raise_error(Jolt::InvalidArgumentError, /32-bit/)
+  end
+
+  it "normalizes invalid motion values to an API error" do
+    expect do
+      @system.bodies.create(shape: Jolt::Shape.sphere(0.5), motion: nil)
+    end.to raise_error(Jolt::InvalidArgumentError, /motion/)
   end
 
   it "destroys owned bodies and shapes with the system" do

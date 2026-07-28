@@ -47,6 +47,7 @@ module Jolt
     end
 
     def interpolated(alpha)
+      check_alive!
       alpha = Conversions.finite_float(alpha, "alpha")
       raise InvalidArgumentError, "alpha must be between 0 and 1" unless alpha.between?(0.0, 1.0)
 
@@ -140,7 +141,7 @@ module Jolt
 
     def check_alive!
       raise UseAfterDestroyError, "body #{@id} has been destroyed" if @destroyed
-      raise UseAfterDestroyError, "system has been destroyed" if @system.destroyed?
+      @system.__check_alive!
     end
   end
 end

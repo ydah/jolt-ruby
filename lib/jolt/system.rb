@@ -12,6 +12,8 @@ module Jolt
       max_body_pairs: 65_536,
       max_contact_constraints: 10_240
     }.freeze
+    MAX_UINT32 = 0xffff_ffff
+    MAX_INT32 = 0x7fff_ffff
 
     attr_reader :layers, :bodies, :constraints, :contact_events
 
@@ -22,7 +24,7 @@ module Jolt
                    contact_queue_capacity: 65_536)
       Jolt.init
       @destroyed = false
-      @updating = false
+      @active_thread = nil
       @body_registry = {}
       @constraint_registry = []
       @character_registry = []
@@ -44,20 +46,18 @@ module Jolt
     def update(delta_time, collision_steps: 1)
       __check_alive!
       delta_time = Conversions.positive_float(delta_time, "delta_time")
-      unless collision_steps.is_a?(Integer) && collision_steps.positive?
-        raise InvalidArgumentError, "collision_steps must be a positive integer"
+      unless collision_steps.is_a?(Integer) && collision_steps.between?(1, MAX_INT32)
+        raise InvalidArgumentError, "collision_steps must be a positive 32-bit integer"
       end
-      raise Error, "recursive System#update is not allowed" if @updating
 
-      @updating = true
-      @body_registry.each_value(&:__capture_before_step)
-      error = Native.JPH_PhysicsSystem_Update(@pointer, delta_time, collision_steps, @job_system)
-      @body_registry.each_value(&:__capture_after_step)
-      __drain_contact_events
-      raise_update_error!(error) unless error.zero?
-      self
-    ensure
-      @updating = false
+      __with_native_operation("recursive System#update is not allowed") do
+        @body_registry.each_value(&:__capture_before_step)
+        error = Native.JPH_PhysicsSystem_Update(@pointer, delta_time, collision_steps, @job_system)
+        @body_registry.each_value(&:__capture_after_step)
+        __drain_contact_events
+        raise_update_error!(error) unless error.zero?
+        self
+      end
     end
 
     def gravity
@@ -82,6 +82,11 @@ module Jolt
 
     def destroy
       return if @destroyed
+
+      __check_alive!
+      if @active_thread
+        raise ConcurrentAccessError, "cannot destroy a system during a native operation"
+      end
 
       __destroy_all_constraints
       __destroy_all_characters
@@ -125,6 +130,7 @@ module Jolt
     end
 
     def __body(id)
+      __check_alive!
       @body_registry[id]
     end
 
@@ -134,19 +140,37 @@ module Jolt
     end
 
     def __bodies_snapshot
+      __check_alive!
       @body_registry.values
     end
 
     def __user_data(id)
+      __check_alive!
       @user_data[id]
     end
 
     def __set_user_data(id, value)
+      __check_alive!
       @user_data[id] = value
     end
 
     def __check_alive!
       raise UseAfterDestroyError, "system has been destroyed" if @destroyed
+      return unless @active_thread && !@active_thread.equal?(Thread.current)
+
+      raise ConcurrentAccessError, "system is in use by another thread"
+    end
+
+    def __with_native_operation(recursive_message = "recursive native operation is not allowed")
+      acquired = false
+      __check_alive!
+      raise Error, recursive_message if @active_thread
+
+      @active_thread = Thread.current
+      acquired = true
+      yield
+    ensure
+      @active_thread = nil if acquired
     end
 
     private
@@ -159,8 +183,8 @@ module Jolt
 
     def create_native_system(max_bodies, max_body_pairs, max_contact_constraints, contact_queue_capacity)
       limits = [max_bodies, max_body_pairs, max_contact_constraints]
-      unless limits.all? { |value| value.is_a?(Integer) && value.positive? }
-        raise InvalidArgumentError, "system limits must be positive integers"
+      unless limits.all? { |value| value.is_a?(Integer) && value.between?(1, MAX_UINT32) }
+        raise InvalidArgumentError, "system limits must be positive 32-bit integers"
       end
 
       @layer_resources = @layers.native_resources

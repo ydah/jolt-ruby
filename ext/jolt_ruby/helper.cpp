@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
+#include <new>
 
 namespace {
 
@@ -186,10 +187,17 @@ void install_contact_procs() {
 }  // namespace
 
 JR_ContactQueue* JR_ContactQueue_Create(uint32_t capacity) {
+  if (capacity < 2 || capacity > (1U << 30)) return nullptr;
+
   static std::once_flag contact_procs_once;
   std::call_once(contact_procs_once, install_contact_procs);
 
-  auto* queue = new JR_ContactQueue(capacity);
+  JR_ContactQueue* queue = nullptr;
+  try {
+    queue = new JR_ContactQueue(capacity);
+  } catch (const std::bad_alloc&) {
+    return nullptr;
+  }
   queue->listener = JPH_ContactListener_Create(queue);
   if (queue->listener) return queue;
 

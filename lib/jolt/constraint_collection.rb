@@ -31,7 +31,10 @@ module Jolt
       create(:point, :JR_Constraint_CreatePoint, body_a, body_b, vec(anchor, "anchor"))
     end
 
-    def distance(body_a:, body_b:, point_a: body_a.position, point_b: body_b.position, limits: nil)
+    def distance(body_a:, body_b:, point_a: nil, point_b: nil, limits: nil)
+      validate_body_pair(body_a, body_b)
+      point_a ||= body_a.position
+      point_b ||= body_b.position
       minimum, maximum = limits ? self.class.interval(limits, "limits") : [-1.0, -1.0]
       create(
         :distance, :JR_Constraint_CreateDistance, body_a, body_b,

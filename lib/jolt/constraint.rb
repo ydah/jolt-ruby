@@ -130,7 +130,7 @@ module Jolt
 
     def check_alive!
       raise UseAfterDestroyError, "#{@kind} constraint has been destroyed" if @destroyed
-      raise UseAfterDestroyError, "system has been destroyed" if @system.destroyed?
+      @system.__check_alive!
     end
   end
 end

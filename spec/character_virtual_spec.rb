@@ -65,4 +65,14 @@ RSpec.describe Jolt::CharacterVirtual do
     expect(replacement).to be_destroyed
     expect { replacement.update(0.1) }.to raise_error(Jolt::UseAfterDestroyError)
   end
+
+  it "rejects an invalid maximum slope" do
+    shape = Jolt::Shape.sphere(0.5)
+
+    expect do
+      described_class.new(@system, shape:, max_slope: Math::PI)
+    end.to raise_error(Jolt::InvalidArgumentError, /max_slope/)
+  ensure
+    shape&.release
+  end
 end

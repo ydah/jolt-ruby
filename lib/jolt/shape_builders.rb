@@ -101,6 +101,9 @@ module Jolt
     end
 
     def packed_floats(value, tuple_size, name)
+      if value.is_a?(String) && !(value.bytesize % FFI.type_size(:float)).zero?
+        raise InvalidArgumentError, "#{name} packed f32 buffer has trailing bytes"
+      end
       values = value.is_a?(String) ? value.unpack("e*") : value.to_a.flatten
       unless (values.length % tuple_size).zero?
         raise InvalidArgumentError, "#{name} has an incomplete tuple"
@@ -112,6 +115,9 @@ module Jolt
     end
 
     def packed_indices(value)
+      if value.is_a?(String) && !(value.bytesize % FFI.type_size(:uint32)).zero?
+        raise InvalidArgumentError, "indices packed u32 buffer has trailing bytes"
+      end
       values = value.is_a?(String) ? value.unpack("V*") : value.to_a.flatten
       raise InvalidArgumentError, "indices has an incomplete triangle" unless (values.length % 3).zero?
       unless values.all? { |index| index.is_a?(Integer) && index >= 0 }

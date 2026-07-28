@@ -21,6 +21,7 @@ module Jolt
     end
 
     def __constraints_snapshot
+      __check_alive!
       @constraint_registry.dup
     end
 

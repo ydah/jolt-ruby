@@ -6,6 +6,7 @@ module Jolt
   class InitializationError < Error; end
   class InvalidArgumentError < Error; end
   class UseAfterDestroyError < Error; end
+  class ConcurrentAccessError < Error; end
   class ShapeError < Error; end
   class PhysicsUpdateError < Error; end
 end

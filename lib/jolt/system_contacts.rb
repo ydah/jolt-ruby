@@ -3,10 +3,12 @@
 module Jolt
   module SystemContacts
     CONTACT_EVENT_TYPES = %i[added persisted removed].freeze
+    MAX_CONTACT_QUEUE_CAPACITY = 1 << 30
 
     def __create_contact_queue(capacity)
-      unless capacity.is_a?(Integer) && capacity >= 2
-        raise InvalidArgumentError, "contact_queue_capacity must be an integer greater than 1"
+      unless capacity.is_a?(Integer) && capacity.between?(2, MAX_CONTACT_QUEUE_CAPACITY)
+        raise InvalidArgumentError,
+              "contact_queue_capacity must be an integer between 2 and #{MAX_CONTACT_QUEUE_CAPACITY}"
       end
 
       @contact_queue = Native.JR_ContactQueue_Create(capacity)
