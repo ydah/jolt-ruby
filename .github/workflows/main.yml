@@ -11,18 +11,31 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    name: Ruby ${{ matrix.ruby }}
+  test:
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.os }} / Ruby ${{ matrix.ruby }}
     strategy:
+      fail-fast: false
       matrix:
-        ruby:
-          - '4.0'
+        include:
+          - os: ubuntu-latest
+            ruby: '3.2'
+          - os: ubuntu-latest
+            ruby: '4.0'
+          - os: ubuntu-24.04-arm
+            ruby: '4.0'
+          - os: macos-15
+            ruby: '4.0'
+          - os: macos-15-intel
+            ruby: '4.0'
+          - os: windows-latest
+            ruby: '4.0'
 
     steps:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
+          submodules: recursive
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -30,3 +43,29 @@ jobs:
           bundler-cache: true
       - name: Run the default task
         run: bundle exec rake
+      - name: Build platform gem
+        if: matrix.ruby == '4.0'
+        run: bundle exec rake native:gem
+      - name: Upload platform gem
+        if: matrix.ruby == '4.0'
+        uses: actions/upload-artifact@v7
+        with:
+          name: jolt-ruby-${{ runner.os }}-${{ runner.arch }}
+          path: jolt-ruby-*.gem
+          if-no-files-found: error
+
+  stress:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          submodules: recursive
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+          bundler-cache: true
+      - name: Run contact queue GC stress test
+        env:
+          JOLT_STRESS: '1'
+        run: bundle exec rake compile && bundle exec rspec spec/stress
