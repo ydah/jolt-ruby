@@ -7,6 +7,7 @@ require "rspec/core/rake_task"
 require "rbconfig"
 require "shellwords"
 require_relative "lib/jolt/native/platform"
+require_relative "lib/jolt/version"
 
 RSpec::Core::RakeTask.new(:spec)
 
@@ -88,6 +89,35 @@ module NativeBuild
   end
 end
 
+module PackageSmoke
+  extend Rake::FileUtilsExt
+  module_function
+
+  ROOT = __dir__
+
+  def run(gem_path, label)
+    raise "gem was not built: #{gem_path}" unless File.file?(gem_path)
+
+    install_dir = File.join(ROOT, "tmp", "gem-smoke", label)
+    FileUtils.rm_rf(install_dir)
+    FileUtils.mkdir_p(install_dir)
+    sh(
+      "gem", "install", "--local", "--ignore-dependencies", "--no-document",
+      "--install-dir", install_dir, gem_path
+    )
+
+    gem_path_entries = [install_dir, *Gem.path].uniq.join(File::PATH_SEPARATOR)
+    environment = {
+      "GEM_HOME" => install_dir,
+      "GEM_PATH" => gem_path_entries,
+      "JOLT_RUBY_SMOKE_HOME" => install_dir
+    }
+    Bundler.with_unbundled_env do
+      sh(environment, RbConfig.ruby, File.join(ROOT, "script", "smoke_gem.rb"))
+    end
+  end
+end
+
 namespace :generator do
   desc "Regenerate FFI declarations and the native layout probe"
   task :generate do
@@ -120,6 +150,26 @@ namespace :native do
   task gem: :compile do
     NativeBuild.stage
     sh({ "JOLT_RUBY_PLATFORM_GEM" => "1" }, "gem", "build", "jolt.gemspec")
+  end
+
+  desc "Build, install, and execute the current platform gem"
+  task smoke_gem: :gem do
+    platform = Gem::Platform.new(NativeBuild::PLATFORM)
+    gem_path = File.join(__dir__, "jolt-ruby-#{Jolt::VERSION}-#{platform}.gem")
+    PackageSmoke.run(gem_path, "platform")
+  end
+end
+
+namespace :package do
+  desc "Build the source gem"
+  task :source_gem do
+    sh("gem", "build", "jolt.gemspec")
+  end
+
+  desc "Build, install, compile, and execute the source gem fallback"
+  task smoke_source: :source_gem do
+    gem_path = File.join(__dir__, "jolt-ruby-#{Jolt::VERSION}.gem")
+    PackageSmoke.run(gem_path, "source")
   end
 end
 

@@ -43,14 +43,33 @@ jobs:
           bundler-cache: true
       - name: Run the default task
         run: bundle exec rake
-      - name: Build platform gem
+      - name: Build and smoke-test platform gem
         if: matrix.ruby == '4.0'
-        run: bundle exec rake native:gem
+        run: bundle exec rake native:smoke_gem
       - name: Upload platform gem
         if: matrix.ruby == '4.0'
         uses: actions/upload-artifact@v7
         with:
           name: jolt-ruby-${{ runner.os }}-${{ runner.arch }}
+          path: jolt-ruby-*.gem
+          if-no-files-found: error
+
+  source-gem:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          submodules: recursive
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+          bundler-cache: true
+      - name: Build and smoke-test source fallback
+        run: bundle exec rake package:smoke_source
+      - uses: actions/upload-artifact@v7
+        with:
+          name: jolt-ruby-source
           path: jolt-ruby-*.gem
           if-no-files-found: error
 
