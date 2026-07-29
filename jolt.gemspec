@@ -45,6 +45,4 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "ffi", "~> 1.17"
   spec.add_dependency "larb", "~> 1.0"
-
-  spec.add_development_dependency "ffi-clang", "~> 0.16"
 end

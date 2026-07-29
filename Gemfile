@@ -5,6 +5,7 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in jolt.gemspec
 gemspec
 
+gem "ffi-clang", "~> 0.16"
 gem "irb"
 gem "rake", "~> 13.0"
 
