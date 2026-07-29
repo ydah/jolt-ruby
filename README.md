@@ -21,6 +21,10 @@ Release builds use platform gems for x86-64/aarch64 Linux, arm64/x86-64 macOS,
 and x64-mingw-ucrt. On another platform RubyGems falls back to the source gem,
 which requires CMake 3.16 or newer and a C++17 compiler.
 
+The 1.x public API follows semantic versioning. Native declarations mirror the
+vendored `joltc` header; higher-level Ruby APIs are added deliberately rather
+than exposing unsafe ownership or callback behavior.
+
 ## First simulation
 
 ```ruby
@@ -184,6 +188,11 @@ alpha = stepper.advance(frame_delta) { |step| system.update(step) }
 render_transform = ball.interpolated(alpha)
 ```
 
+Each system permits one native operation at a time. Do not read, mutate, or
+destroy a system or one of its handles from another thread while
+`System#update` or `CharacterVirtual#update` is running. Such access raises
+`Jolt::ConcurrentAccessError`.
+
 The returned transform exposes `position` and `rotation` as `Larb::Vec3` and
 `Larb::Quat`, matching the stagecraft binding contract. See
 [`examples/stagecraft_binding.rb`](examples/stagecraft_binding.rb).
@@ -205,6 +214,8 @@ bundle exec rake native:compile       # build joltc and the helper library
 bundle exec rake generator:generate   # regenerate all joltc FFI declarations
 bundle exec rake native:verify_layout # compare Clang, C++, and FFI layouts
 bundle exec rake native:gem           # build a precompiled platform gem
+bundle exec rake native:smoke_gem     # install and run the platform gem
+bundle exec rake package:smoke_source # compile, install, and run the source gem
 JOLT_STRESS=1 bundle exec rspec spec/stress
 ```
 

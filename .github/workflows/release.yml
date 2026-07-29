@@ -1,0 +1,99 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  platform-gems:
+    name: Build ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            platform: x86_64-linux
+          - os: ubuntu-24.04-arm
+            platform: aarch64-linux
+          - os: macos-15
+            platform: arm64-darwin
+          - os: macos-15-intel
+            platform: x86_64-darwin
+          - os: windows-latest
+            platform: x64-mingw-ucrt
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          submodules: recursive
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+          bundler-cache: true
+      - name: Build and smoke-test platform gem
+        run: bundle exec rake native:smoke_gem
+      - uses: actions/upload-artifact@v7
+        with:
+          name: platform-${{ matrix.platform }}
+          path: jolt-ruby-*.gem
+          if-no-files-found: error
+
+  source-gem:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          submodules: recursive
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+          bundler-cache: true
+      - name: Build and smoke-test source fallback
+        run: bundle exec rake package:smoke_source
+      - uses: actions/upload-artifact@v7
+        with:
+          name: source
+          path: jolt-ruby-*.gem
+          if-no-files-found: error
+
+  publish:
+    needs:
+      - platform-gems
+      - source-gem
+    runs-on: ubuntu-22.04
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: 'platform-*'
+          path: dist
+          merge-multiple: true
+      - uses: actions/download-artifact@v5
+        with:
+          name: source
+          path: dist
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+      - name: Verify release set and tag
+        run: ruby script/verify_release.rb dist "${GITHUB_REF_NAME}"
+      - uses: rubygems/configure-rubygems-credentials@v2
+      - name: Publish all gems
+        working-directory: dist
+        shell: bash
+        run: |
+          for gem_file in *.gem; do
+            gem push "${gem_file}"
+          done

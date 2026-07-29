@@ -13,6 +13,11 @@ end
 
 begin
   system = Jolt::System.new
+  missing_functions = Jolt::Native::Generated.missing_functions
+  unless missing_functions.empty?
+    raise "packaged native libraries are missing: #{missing_functions.join(", ")}"
+  end
+
   body = system.bodies.create(shape: Jolt::Shape.sphere(0.5), position: [0, 2, 0])
   system.update(1.0 / 60.0)
   raise "packaged simulation did not advance" unless body.position.y < 2
